@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -24,7 +24,8 @@ export function AuthScreen({ title, subtitle, error, notice, children }: AuthScr
   return (
     <KeyboardAvoidingView
       style={[styles.flex, { backgroundColor: theme.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      // 'padding' on Android too: with edge-to-edge the window no longer resizes for the keyboard.
+      behavior="padding">
       <ScrollView
         style={styles.flex}
         keyboardShouldPersistTaps="handled"
