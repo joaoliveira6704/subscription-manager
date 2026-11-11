@@ -4,11 +4,13 @@ import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ExternalLink } from '@/components/external-link';
+import { Button } from '@/components/ui/button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Collapsible } from '@/components/ui/collapsible';
 import { WebBadge } from '@/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAuth } from '@/context/auth-context';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function TabTwoScreen() {
@@ -18,6 +20,7 @@ export default function TabTwoScreen() {
     bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
   };
   const theme = useTheme();
+  const { user, signOut } = useAuth();
 
   const contentPlatformStyle = Platform.select({
     android: {
@@ -56,6 +59,19 @@ export default function TabTwoScreen() {
               </ThemedView>
             </Pressable>
           </ExternalLink>
+        </ThemedView>
+
+        <ThemedView type="backgroundElement" style={styles.accountCard}>
+          <ThemedText type="small" themeColor="textSecondary">
+            Signed in as
+          </ThemedText>
+          <ThemedText type="smallBold">{user?.name || user?.email}</ThemedText>
+          {user?.name ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              {user.email}
+            </ThemedText>
+          ) : null}
+          <Button title="Sign out" onPress={signOut} />
         </ThemedView>
 
         <ThemedView style={styles.sectionsWrapper}>
@@ -157,6 +173,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.one,
     alignItems: 'center',
+  },
+  accountCard: {
+    gap: Spacing.two,
+    marginHorizontal: Spacing.four,
+    padding: Spacing.three,
+    borderRadius: Spacing.three,
   },
   sectionsWrapper: {
     gap: Spacing.five,
