@@ -1,0 +1,104 @@
+# Nightly prerelease from main: Android APK + iOS simulator app, only when main has new commits.
+# Run it by hand from the Actions tab ("Run workflow") to release right away.
+name: Nightly
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # 03:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Anything new?
+    runs-on: ubuntu-latest
+    outputs:
+      should-release: ${{ steps.check.outputs.should-release }}
+      sha: ${{ steps.check.outputs.sha }}
+      previous-tag: ${{ steps.check.outputs.previous-tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - id: check
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          sha=$(git rev-parse HEAD)
+          previous=$(git tag --list 'nightly-*' --sort=-creatordate | head -n 1)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "previous-tag=$previous" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT" = "workflow_dispatch" ] || [ -z "$previous" ] \
+            || [ "$(git rev-list -n 1 "$previous")" != "$sha" ]; then
+            echo "should-release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No new commits since $previous; skipping."
+            echo "should-release=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  checks:
+    needs: changes
+    if: needs.changes.outputs.should-release == 'true'
+    uses: ./.github/workflows/checks.yml
+
+  build:
+    needs: [changes, checks]
+    uses: ./.github/workflows/build.yml
+    with:
+      retention-days: 3
+
+  release:
+    name: Publish nightly release
+    needs: [changes, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SHA: ${{ needs.changes.outputs.sha }}
+      PREVIOUS_TAG: ${{ needs.changes.outputs.previous-tag }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create the release
+        run: |
+          day=$(date -u +%Y-%m-%d)
+          tag="nightly-$(date -u +%Y%m%d)"
+          # A manual run on a day that already has a nightly replaces it.
+          gh release delete "$tag" --cleanup-tag --yes 2>/dev/null || true
+
+          mv artifacts/android-apk/app-release.apk "subscription-manager-$tag.apk"
+          mv artifacts/ios-simulator-app/ios-simulator-app.zip \
+            "subscription-manager-$tag-ios-simulator.zip"
+
+          notes_from=()
+          if [ -n "$PREVIOUS_TAG" ] && [ "$PREVIOUS_TAG" != "$tag" ]; then
+            notes_from=(--notes-start-tag "$PREVIOUS_TAG")
+          fi
+
+          gh release create "$tag" \
+            --prerelease \
+            --target "$SHA" \
+            --title "Nightly $day (${SHA:0:7})" \
+            --generate-notes "${notes_from[@]}" \
+            "subscription-manager-$tag.apk" \
+            "subscription-manager-$tag-ios-simulator.zip"
+
+      - name: Keep only the 7 newest nightlies
+        run: |
+          gh release list --limit 100 --json tagName,createdAt \
+            --jq '[.[] | select(.tagName | startswith("nightly-"))] | sort_by(.createdAt) | reverse | .[7:] | .[].tagName' |
+            while read -r old; do
+              gh release delete "$old" --cleanup-tag --yes
+            done
