@@ -1,0 +1,50 @@
+# Types, lint and tests. Reused by the CI and nightly workflows.
+# (No web bundle: the app targets Android and iOS, whose release builds bundle the JS.)
+name: Checks
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Types, lint and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Cache bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Warns (without failing) when Expo publishes newer patch versions; that depends on
+      # Expo's servers, not on the code, so it must not turn PRs red overnight.
+      - name: Check package versions match the Expo SDK
+        continue-on-error: true
+        run: bunx expo install --check
+
+      - name: Typecheck
+        run: bunx tsc --noEmit
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Unit tests
+        run: bun run test --ci

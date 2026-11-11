@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <!-- Renewal loop: a clockwise arc that ends in an arrowhead. -->
+  <path d="M662 252.2A300 300 0 1 1 409.4 230.1" fill="none" stroke="#FFFFFF" stroke-width="92" stroke-linecap="round"/>
+  <path d="M375.2 136.1L512.8 192.5L443.6 324.1Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="24" stroke-linejoin="round"/>
+  <!-- Payment card with a magnetic stripe gap. -->
+  <path d="M362 456V452A44 44 0 0 1 406 408H618A44 44 0 0 1 662 452V456Z" fill="#FFFFFF"/>
+  <path d="M362 488H662V572A44 44 0 0 1 618 616H406A44 44 0 0 1 362 572Z" fill="#FFFFFF"/>
+</svg>

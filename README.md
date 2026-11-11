@@ -25,6 +25,26 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## CI and nightly builds
+
+GitHub Actions workflows live in `.github/workflows/`.
+
+- **Every pull request** (and every push to `main`) runs the **CI** workflow:
+  - **Checks:** typecheck, lint and unit tests. It also warns, without failing, when Expo has newer patch versions of dependencies.
+  - **Builds:** an Android release APK and an iOS simulator app, both built from a clean `expo prebuild`.
+  - **CI passed:** one check that turns green only when all of the above succeed. Require it in the `main` branch ruleset.
+  - Each run's APK and simulator app can be downloaded from its **Artifacts** for 7 days.
+- **Nightly:** at 03:00 UTC, if `main` has new commits, the same checks and builds run and a `nightly-YYYYMMDD` prerelease is published with both files. The 7 newest nightlies are kept. To publish one right away, open **Actions → Nightly → Run workflow**.
+
+To install a nightly build:
+
+- **Android:** download the `.apk` onto the device and open it. You need to allow installs from unknown sources.
+- **iOS simulator:** unzip the file, then run:
+
+  ```bash
+  xcrun simctl install booted subscriptionmanager.app
+  ```
+
 ## Get a fresh project
 
 When you're ready, run:
