@@ -74,19 +74,19 @@ export default function ProfileScreen() {
             icon={{ ios: 'person', android: 'person', web: 'person' }}
             title={t('form.name')}
             subtitle={user?.name || t('profile.addName')}
-            onPress={() => router.push('/account/edit-name')}
+            onPress={() => router.navigate('/account/edit-name')}
           />
           <ListRow
             icon={{ ios: 'envelope', android: 'mail', web: 'mail' }}
             title={t('form.email')}
             subtitle={user?.email}
-            onPress={() => router.push('/account/edit-email')}
+            onPress={() => router.navigate('/account/edit-email')}
           />
           <ListRow
             icon={{ ios: 'lock', android: 'lock', web: 'lock' }}
             title={t('form.password')}
             subtitle={t('profile.changePassword')}
-            onPress={() => router.push('/account/change-password')}
+            onPress={() => router.navigate('/account/change-password')}
           />
         </ListSection>
 
@@ -98,7 +98,7 @@ export default function ProfileScreen() {
               theme: t(`settings.${themePreference}`),
               language: languageName(language),
             })}
-            onPress={() => router.push('/profile/settings')}
+            onPress={() => router.navigate('/profile/settings')}
           />
         </ListSection>
 

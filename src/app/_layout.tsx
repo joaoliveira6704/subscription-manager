@@ -48,7 +48,7 @@ function RootNavigator() {
   const sheetOptions = {
     presentation: 'formSheet' as const,
     sheetGrabberVisible: true,
-    sheetAllowedDetents: [0.92],
+    sheetAllowedDetents: 'fitToContents' as const,
     sheetCornerRadius: Spacing.four,
     contentStyle: { backgroundColor: theme.backgroundSheet },
   };

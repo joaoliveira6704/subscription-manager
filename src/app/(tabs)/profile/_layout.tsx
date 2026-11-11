@@ -18,7 +18,15 @@ export default function ProfileLayout() {
         contentStyle: { backgroundColor: theme.background },
       }}>
       <Stack.Screen name="index" options={{ headerShown: false, title: t('profile.title') }} />
-      <Stack.Screen name="settings" options={{ title: t('settings.title') }} />
+      <Stack.Screen
+        name="settings"
+        options={{
+          title: t('settings.title'),
+          // Set here, not only via the previous screen's title: iOS reads that once on push,
+          // so the back button kept the old language after switching it in Settings.
+          headerBackTitle: t('profile.title'),
+        }}
+      />
     </Stack>
   );
 }
