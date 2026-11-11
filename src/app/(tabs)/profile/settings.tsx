@@ -1,14 +1,19 @@
 import * as Haptics from 'expo-haptics';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CurrencyPicker } from '@/components/ui/currency-picker';
 import { ListRow, ListSection } from '@/components/ui/list';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useCurrency } from '@/context/currency-context';
 import { useTranslation } from '@/context/language-context';
 import { useThemePreference } from '@/context/theme-preference-context';
 import { useTheme } from '@/hooks/use-theme';
+import type { CurrencyMode } from '@/lib/currency-preference';
 import { LANGUAGES, languageName, type LanguagePreference } from '@/lib/i18n';
+import { currencySymbol } from '@/lib/money';
 import { THEME_PREFERENCES, type ThemePreference } from '@/lib/theme-preference';
 
 const THEME_ICONS: Record<ThemePreference, SymbolViewProps['name']> = {
@@ -32,8 +37,20 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const themePreference = useThemePreference();
-  const { t, language, preference: languagePreference, setPreference: setLanguage } =
+  const { t, locale, language, preference: languagePreference, setPreference: setLanguage } =
     useTranslation();
+  const currencyPrefs = useCurrency();
+  const [currencyPickerOpen, setCurrencyPickerOpen] = useState(false);
+  const appCurrencyLabel = `${t(`currencyName.${currencyPrefs.currency}`)} (${currencySymbol(
+    currencyPrefs.currency,
+    locale
+  )})`;
+
+  function chooseCurrencyMode(next: CurrencyMode) {
+    if (next === currencyPrefs.mode) return;
+    Haptics.selectionAsync();
+    currencyPrefs.setMode(next);
+  }
 
   function chooseTheme(next: ThemePreference) {
     if (next === themePreference.preference) return;
@@ -110,7 +127,43 @@ export default function SettingsScreen() {
             );
           })}
         </ListSection>
+
+        <ListSection title={t('currency.title')}>
+          <ListRow
+            icon={{ ios: 'banknote', android: 'payments', web: 'payments' }}
+            title={t('currency.single')}
+            subtitle={t('currency.singleHint', { currency: appCurrencyLabel })}
+            onPress={() => chooseCurrencyMode('single')}
+            accessibilityRole="radio"
+            selected={currencyPrefs.mode === 'single'}
+            trailing={currencyPrefs.mode === 'single' ? checkmark : null}
+          />
+          <ListRow
+            icon={{ ios: 'square.stack', android: 'stacks', web: 'stacks' }}
+            title={t('currency.perSubscription')}
+            subtitle={t('currency.perSubscriptionHint')}
+            onPress={() => chooseCurrencyMode('perSubscription')}
+            accessibilityRole="radio"
+            selected={currencyPrefs.mode === 'perSubscription'}
+            trailing={currencyPrefs.mode === 'perSubscription' ? checkmark : null}
+          />
+          <ListRow
+            icon={{ ios: 'dollarsign.circle', android: 'currency_exchange', web: 'currency_exchange' }}
+            title={t('currency.appCurrency')}
+            subtitle={t('currency.appCurrencyHint')}
+            value={currencyPrefs.currency}
+            onPress={() => setCurrencyPickerOpen(true)}
+          />
+        </ListSection>
       </View>
+
+      <CurrencyPicker
+        visible={currencyPickerOpen}
+        title={t('currency.appCurrency')}
+        value={currencyPrefs.currency}
+        onSelect={(value) => value !== 'all' && currencyPrefs.setCurrency(value)}
+        onClose={() => setCurrencyPickerOpen(false)}
+      />
     </ScrollView>
   );
 }

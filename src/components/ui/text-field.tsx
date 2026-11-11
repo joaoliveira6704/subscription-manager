@@ -12,17 +12,19 @@ export type TextFieldProps = TextInputProps & {
   error?: string | null;
   /** Element rendered at the right edge of the input, e.g. an icon button. */
   accessory?: ReactNode;
+  /** Hides the visible label; it is still used as the input's accessibility label. */
+  hideLabel?: boolean;
 };
 
 export const TextField = forwardRef<TextInputInstance, TextFieldProps>(function TextField(
-  { label, error, accessory, style, ...inputProps },
+  { label, error, accessory, hideLabel = false, style, ...inputProps },
   ref
 ) {
   const theme = useTheme();
 
   return (
     <View style={styles.container}>
-      <ThemedText type="smallBold">{label}</ThemedText>
+      {hideLabel ? null : <ThemedText type="smallBold">{label}</ThemedText>}
       <View
         style={[
           styles.inputRow,
@@ -31,6 +33,7 @@ export const TextField = forwardRef<TextInputInstance, TextFieldProps>(function 
         ]}>
         <TextInput
           ref={ref}
+          accessibilityLabel={label}
           placeholderTextColor={theme.textSecondary}
           style={[styles.input, { color: theme.text }, style]}
           {...inputProps}

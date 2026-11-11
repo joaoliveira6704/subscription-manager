@@ -1,4 +1,5 @@
-import { MAX_NAME_LENGTH, MIN_PASSWORD_LENGTH } from '@/lib/validation';
+import { MAX_INTERVAL_COUNT, type Interval } from '@/lib/billing';
+import { MAX_NAME_LENGTH, MAX_NOTES_LENGTH, MIN_PASSWORD_LENGTH } from '@/lib/validation';
 
 import { en, ptPT, type TranslationKey, type Translations } from './translations';
 
@@ -62,7 +63,12 @@ export function translate(language: Language, key: TranslationKey, params?: Tran
 }
 
 // Values the lib's error messages are built with, so they can be matched back to a key.
-const MESSAGE_PARAMS: TranslateParams = { min: MIN_PASSWORD_LENGTH, max: MAX_NAME_LENGTH };
+const MESSAGE_PARAMS: TranslateParams = {
+  min: MIN_PASSWORD_LENGTH,
+  max: MAX_NAME_LENGTH,
+  maxNotes: MAX_NOTES_LENGTH,
+  maxInterval: MAX_INTERVAL_COUNT,
+};
 
 const ERROR_KEYS_BY_MESSAGE = new Map<string, TranslationKey>(
   (Object.keys(en) as TranslationKey[])
@@ -77,4 +83,27 @@ const ERROR_KEYS_BY_MESSAGE = new Map<string, TranslationKey>(
 export function translateMessage(language: Language, message: string) {
   const key = ERROR_KEYS_BY_MESSAGE.get(message);
   return key ? translate(language, key, MESSAGE_PARAMS) : message;
+}
+
+const SINGLE_INTERVAL_KEYS = {
+  day: 'cycle.daily',
+  week: 'cycle.weekly',
+  month: 'cycle.monthly',
+  year: 'cycle.yearly',
+} as const satisfies Record<Interval['unit'], TranslationKey>;
+
+const PLURAL_UNIT_KEYS = {
+  day: 'unit.days',
+  week: 'unit.weeks',
+  month: 'unit.months',
+  year: 'unit.years',
+} as const satisfies Record<Interval['unit'], TranslationKey>;
+
+/** "Monthly" for every 1 month, otherwise "Every 3 months" / "A cada 3 meses". */
+export function formatInterval(language: Language, { unit, count }: Interval) {
+  if (count === 1) return translate(language, SINGLE_INTERVAL_KEYS[unit]);
+  return translate(language, 'cycle.every', {
+    count,
+    unit: translate(language, PLURAL_UNIT_KEYS[unit]),
+  });
 }

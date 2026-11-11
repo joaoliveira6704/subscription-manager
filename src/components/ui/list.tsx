@@ -43,6 +43,10 @@ type ListRowProps = {
   value?: string;
   /** Replaces the chevron, e.g. a checkmark for the selected option. */
   trailing?: ReactNode;
+  /** Replaces the round icon, e.g. a brand logo. */
+  leading?: ReactNode;
+  /** Small element shown right after the title, e.g. a category tag. */
+  titleAccessory?: ReactNode;
   onPress?: () => void;
   accessibilityRole?: AccessibilityRole;
   selected?: boolean;
@@ -55,6 +59,8 @@ export function ListRow({
   subtitle,
   value,
   trailing,
+  leading,
+  titleAccessory,
   onPress,
   accessibilityRole,
   selected,
@@ -64,11 +70,22 @@ export function ListRow({
 
   const content = (
     <>
-      <View style={[styles.iconCircle, { backgroundColor: theme.backgroundSelected }]}>
-        <SymbolView name={icon} size={20} tintColor={theme.text} />
-      </View>
+      {leading ?? (
+        <View style={[styles.iconCircle, { backgroundColor: theme.backgroundSelected }]}>
+          <SymbolView name={icon} size={20} tintColor={theme.text} />
+        </View>
+      )}
       <View style={styles.text}>
-        <ThemedText>{title}</ThemedText>
+        {titleAccessory ? (
+          <View style={styles.titleRow}>
+            <ThemedText numberOfLines={1} style={styles.titleText}>
+              {title}
+            </ThemedText>
+            {titleAccessory}
+          </View>
+        ) : (
+          <ThemedText>{title}</ThemedText>
+        )}
         {subtitle ? (
           <ThemedText type="small" themeColor="textSecondary">
             {subtitle}
@@ -147,5 +164,13 @@ const styles = StyleSheet.create({
   text: {
     flex: 1,
     gap: Spacing.half,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  titleText: {
+    flexShrink: 1,
   },
 });

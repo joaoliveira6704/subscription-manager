@@ -14,6 +14,14 @@ export const Colors = {
     backgroundElement: '#F0F0F3',
     backgroundSelected: '#E0E1E6',
     backgroundSheet: '#ffffff',
+    /** Dimmed backdrop behind custom bottom sheets. */
+    scrim: 'rgba(0, 0, 0, 0.3)',
+    /** Centered alert dialogs, raised slightly above the page like iOS alerts. */
+    backgroundAlert: '#F2F2F7',
+    /** Hairlines between alert buttons. */
+    separator: 'rgba(60, 60, 67, 0.29)',
+    /** Destructive action text; passes WCAG AA on `backgroundAlert`. */
+    destructive: '#D70015',
     textSecondary: '#60646C',
   },
   dark: {
@@ -23,6 +31,10 @@ export const Colors = {
     backgroundSelected: '#2E3135',
     /** Raised above `background` so sheets stay visible against a black screen. */
     backgroundSheet: '#18191B',
+    scrim: 'rgba(0, 0, 0, 0.6)',
+    backgroundAlert: '#2C2C2E',
+    separator: 'rgba(84, 84, 88, 0.6)',
+    destructive: '#FF6961',
     textSecondary: '#B0B4BA',
   },
 } as const;

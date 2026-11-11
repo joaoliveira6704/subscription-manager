@@ -1,5 +1,6 @@
 export const MIN_PASSWORD_LENGTH = 6;
 export const MAX_NAME_LENGTH = 60;
+export const MAX_NOTES_LENGTH = 500;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

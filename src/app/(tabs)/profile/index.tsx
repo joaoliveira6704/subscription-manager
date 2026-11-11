@@ -1,13 +1,14 @@
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { ListRow, ListSection } from '@/components/ui/list';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAlert } from '@/context/alert-context';
 import { useAuth } from '@/context/auth-context';
 import { useTranslation } from '@/context/language-context';
 import { useThemePreference } from '@/context/theme-preference-context';
@@ -24,6 +25,7 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { preference: themePreference } = useThemePreference();
   const { t, language, locale } = useTranslation();
+  const alert = useAlert();
 
   const displayName = user?.name || user?.email || '';
   const createdMonth = formatMonthYear(user?.createdAt, locale);
@@ -31,7 +33,7 @@ export default function ProfileScreen() {
 
   function confirmSignOut() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    Alert.alert(t('profile.signOutTitle'), t('profile.signOutMessage'), [
+    alert(t('profile.signOutTitle'), t('profile.signOutMessage'), [
       { text: t('profile.cancel'), style: 'cancel' },
       { text: t('profile.signOut'), style: 'destructive', onPress: () => signOut() },
     ]);
@@ -58,9 +60,7 @@ export default function ProfileScreen() {
             <ThemedText type="subtitle" style={styles.name} numberOfLines={2}>
               {displayName}
             </ThemedText>
-            {user?.name ? (
-              <ThemedText themeColor="textSecondary">{user.email}</ThemedText>
-            ) : null}
+            {user?.name ? <ThemedText themeColor="textSecondary">{user.email}</ThemedText> : null}
             {createdMonth ? (
               <ThemedText type="small" themeColor="textSecondary">
                 {t('profile.memberSince', { date: createdMonth })}

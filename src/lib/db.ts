@@ -2,7 +2,10 @@ import { openDatabaseSync } from 'expo-sqlite';
 
 export const db = openDatabaseSync('app.db');
 
-const DATABASE_VERSION = 2;
+// SQLite leaves foreign keys off per connection; needed for ON DELETE CASCADE.
+db.execSync('PRAGMA foreign_keys = ON');
+
+const DATABASE_VERSION = 5;
 
 /**
  * Runs pending schema migrations, tracked with `PRAGMA user_version`.
@@ -29,6 +32,70 @@ export async function migrate() {
 
   if (currentVersion < 2) {
     await db.execAsync(`ALTER TABLE users ADD COLUMN name TEXT NOT NULL DEFAULT ''`);
+  }
+
+  if (currentVersion < 3) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        amount_minor INTEGER NOT NULL CHECK (amount_minor >= 0),
+        currency TEXT NOT NULL,
+        cycle TEXT NOT NULL CHECK (cycle IN ('weekly', 'monthly', 'yearly')),
+        next_payment TEXT NOT NULL,
+        billing_day INTEGER NOT NULL CHECK (billing_day BETWEEN 1 AND 31),
+        category TEXT NOT NULL DEFAULT 'other',
+        notes TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE INDEX IF NOT EXISTS subscriptions_user ON subscriptions(user_id);
+    `);
+  }
+
+  if (currentVersion < 4) {
+    // Custom intervals ("every 3 months") and a first payment date instead of a next one.
+    // SQLite can't change CHECK constraints in place, so the table is rebuilt.
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(`
+        CREATE TABLE subscriptions_v4 (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          amount_minor INTEGER NOT NULL CHECK (amount_minor >= 0),
+          currency TEXT NOT NULL,
+          first_payment TEXT NOT NULL,
+          interval_unit TEXT NOT NULL CHECK (interval_unit IN ('day', 'week', 'month', 'year')),
+          interval_count INTEGER NOT NULL DEFAULT 1 CHECK (interval_count BETWEEN 1 AND 99),
+          billing_day INTEGER NOT NULL CHECK (billing_day BETWEEN 1 AND 31),
+          category TEXT NOT NULL DEFAULT 'other',
+          notes TEXT NOT NULL DEFAULT '',
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        INSERT INTO subscriptions_v4
+          (id, user_id, name, amount_minor, currency, first_payment, interval_unit,
+           interval_count, billing_day, category, notes, created_at)
+          SELECT id, user_id, name, amount_minor, currency, next_payment,
+            CASE cycle WHEN 'weekly' THEN 'week' WHEN 'yearly' THEN 'year' ELSE 'month' END,
+            1, billing_day, category, notes, created_at
+          FROM subscriptions;
+        DROP TABLE subscriptions;
+        ALTER TABLE subscriptions_v4 RENAME TO subscriptions;
+        CREATE INDEX IF NOT EXISTS subscriptions_user ON subscriptions(user_id);
+      `);
+    });
+  }
+
+  if (currentVersion < 5) {
+    // Optional payment method, and for cards only the type and last 4 digits.
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(`
+        ALTER TABLE subscriptions ADD COLUMN payment_method TEXT;
+        ALTER TABLE subscriptions ADD COLUMN card_brand TEXT;
+        ALTER TABLE subscriptions ADD COLUMN card_last4 TEXT
+          CHECK (card_last4 IS NULL OR (length(card_last4) = 4 AND card_last4 NOT GLOB '*[^0-9]*'));
+      `);
+    });
   }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
