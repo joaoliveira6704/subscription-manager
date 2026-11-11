@@ -17,19 +17,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
+import { useTranslation } from '@/context/language-context';
+import type { TranslationKey } from '@/lib/i18n';
 
 type TabConfig = {
   name: string;
   href: '/' | '/subscriptions' | '/analytics' | '/profile';
-  label: string;
+  label: TranslationKey;
   icon: AndroidSymbol;
 };
 
 const TABS: TabConfig[] = [
-  { name: 'index', href: '/', label: 'Home', icon: 'home' },
-  { name: 'subscriptions', href: '/subscriptions', label: 'Subscriptions', icon: 'sell' },
-  { name: 'analytics', href: '/analytics', label: 'Analytics', icon: 'analytics' },
-  { name: 'profile', href: '/profile', label: 'Profile', icon: 'person' },
+  { name: 'index', href: '/', label: 'tabs.home', icon: 'home' },
+  { name: 'subscriptions', href: '/subscriptions', label: 'tabs.subscriptions', icon: 'sell' },
+  { name: 'analytics', href: '/analytics', label: 'tabs.analytics', icon: 'analytics' },
+  { name: 'profile', href: '/profile', label: 'tabs.profile', icon: 'person' },
 ];
 
 const BAR_PADDING = Spacing.one;
@@ -42,6 +44,7 @@ const INDICATOR_DURATION = 220;
 export default function AppTabs() {
   const blurTarget = useRef<ComponentRef<typeof View>>(null);
   const background = Colors[useColorScheme() === 'dark' ? 'dark' : 'light'].background;
+  const { t } = useTranslation();
 
   return (
     <Tabs>
@@ -54,7 +57,7 @@ export default function AppTabs() {
         <FloatingTabBar blurTarget={blurTarget}>
           {TABS.map((tab) => (
             <TabTrigger key={tab.name} name={tab.name} href={tab.href} asChild>
-              <TabButton label={tab.label} icon={tab.icon} />
+              <TabButton label={t(tab.label)} icon={tab.icon} />
             </TabTrigger>
           ))}
         </FloatingTabBar>

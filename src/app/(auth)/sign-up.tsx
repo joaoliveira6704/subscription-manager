@@ -9,6 +9,7 @@ import { PasswordField } from '@/components/ui/password-field';
 import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
+import { useTranslation } from '@/context/language-context';
 import {
   MIN_PASSWORD_LENGTH,
   validateEmail,
@@ -21,6 +22,7 @@ type FieldErrors = { name?: string; email?: string; password?: string; confirm?:
 
 export default function SignUpScreen() {
   const { signUp } = useAuth();
+  const { t, tm } = useTranslation();
   const emailRef = useRef<TextInputInstance>(null);
   const passwordRef = useRef<TextInputInstance>(null);
   const confirmRef = useRef<TextInputInstance>(null);
@@ -53,16 +55,16 @@ export default function SignUpScreen() {
 
   return (
     <AuthScreen
-      title="Create account"
-      subtitle="Start tracking your subscriptions."
-      error={formError}>
+      title={t('signUp.title')}
+      subtitle={t('signUp.subtitle')}
+      error={formError && tm(formError)}>
       <View style={styles.fields}>
         <TextField
-          label="Name"
+          label={t('form.name')}
           value={name}
           onChangeText={setName}
-          error={fieldErrors.name}
-          placeholder="Your name"
+          error={fieldErrors.name && tm(fieldErrors.name)}
+          placeholder={t('form.namePlaceholder')}
           autoCapitalize="words"
           autoComplete="name"
           textContentType="name"
@@ -72,11 +74,11 @@ export default function SignUpScreen() {
         />
         <TextField
           ref={emailRef}
-          label="Email"
+          label={t('form.email')}
           value={email}
           onChangeText={setEmail}
-          error={fieldErrors.email}
-          placeholder="you@example.com"
+          error={fieldErrors.email && tm(fieldErrors.email)}
+          placeholder={t('form.emailPlaceholder')}
           autoCapitalize="none"
           autoComplete="email"
           autoCorrect={false}
@@ -88,11 +90,11 @@ export default function SignUpScreen() {
         />
         <PasswordField
           ref={passwordRef}
-          label="Password"
+          label={t('form.password')}
           value={password}
           onChangeText={setPassword}
-          error={fieldErrors.password}
-          placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
+          error={fieldErrors.password && tm(fieldErrors.password)}
+          placeholder={t('form.newPasswordPlaceholder', { min: MIN_PASSWORD_LENGTH })}
           autoComplete="new-password"
           textContentType="newPassword"
           returnKeyType="next"
@@ -101,11 +103,11 @@ export default function SignUpScreen() {
         />
         <PasswordField
           ref={confirmRef}
-          label="Confirm password"
+          label={t('form.confirmPassword')}
           value={confirm}
           onChangeText={setConfirm}
-          error={fieldErrors.confirm}
-          placeholder="Repeat your password"
+          error={fieldErrors.confirm && tm(fieldErrors.confirm)}
+          placeholder={t('form.confirmPasswordPlaceholder')}
           autoComplete="new-password"
           textContentType="newPassword"
           returnKeyType="go"
@@ -113,14 +115,14 @@ export default function SignUpScreen() {
         />
       </View>
 
-      <Button title="Create account" loading={submitting} onPress={handleSubmit} />
+      <Button title={t('signUp.submit')} loading={submitting} onPress={handleSubmit} />
 
       <View style={styles.footer}>
         <ThemedText type="small" themeColor="textSecondary">
-          Already have an account?
+          {t('signUp.haveAccount')}
         </ThemedText>
         <Link href="/login" dismissTo>
-          <ThemedText type="linkPrimary">Sign in</ThemedText>
+          <ThemedText type="linkPrimary">{t('signUp.signIn')}</ThemedText>
         </Link>
       </View>
     </AuthScreen>

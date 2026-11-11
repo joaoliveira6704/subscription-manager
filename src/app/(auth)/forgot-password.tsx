@@ -9,6 +9,7 @@ import { PasswordField } from '@/components/ui/password-field';
 import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
+import { useTranslation } from '@/context/language-context';
 import {
   MIN_PASSWORD_LENGTH,
   validateEmail,
@@ -25,6 +26,7 @@ type FieldErrors = { email?: string; password?: string; confirm?: string };
  */
 export default function ForgotPasswordScreen() {
   const { resetPassword } = useAuth();
+  const { t, tm } = useTranslation();
   const router = useRouter();
   const passwordRef = useRef<TextInputInstance>(null);
   const confirmRef = useRef<TextInputInstance>(null);
@@ -59,16 +61,16 @@ export default function ForgotPasswordScreen() {
 
   return (
     <AuthScreen
-      title="Reset password"
-      subtitle="Enter your account email and choose a new password."
-      error={formError}>
+      title={t('forgotPassword.title')}
+      subtitle={t('forgotPassword.subtitle')}
+      error={formError && tm(formError)}>
       <View style={styles.fields}>
         <TextField
-          label="Email"
+          label={t('form.email')}
           value={email}
           onChangeText={setEmail}
-          error={fieldErrors.email}
-          placeholder="you@example.com"
+          error={fieldErrors.email && tm(fieldErrors.email)}
+          placeholder={t('form.emailPlaceholder')}
           autoCapitalize="none"
           autoComplete="email"
           autoCorrect={false}
@@ -80,11 +82,11 @@ export default function ForgotPasswordScreen() {
         />
         <PasswordField
           ref={passwordRef}
-          label="New password"
+          label={t('form.newPassword')}
           value={password}
           onChangeText={setPassword}
-          error={fieldErrors.password}
-          placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
+          error={fieldErrors.password && tm(fieldErrors.password)}
+          placeholder={t('form.newPasswordPlaceholder', { min: MIN_PASSWORD_LENGTH })}
           autoComplete="new-password"
           textContentType="newPassword"
           returnKeyType="next"
@@ -93,11 +95,11 @@ export default function ForgotPasswordScreen() {
         />
         <PasswordField
           ref={confirmRef}
-          label="Confirm new password"
+          label={t('form.confirmNewPassword')}
           value={confirm}
           onChangeText={setConfirm}
-          error={fieldErrors.confirm}
-          placeholder="Repeat your new password"
+          error={fieldErrors.confirm && tm(fieldErrors.confirm)}
+          placeholder={t('form.confirmNewPasswordPlaceholder')}
           autoComplete="new-password"
           textContentType="newPassword"
           returnKeyType="go"
@@ -105,11 +107,11 @@ export default function ForgotPasswordScreen() {
         />
       </View>
 
-      <Button title="Update password" loading={submitting} onPress={handleSubmit} />
+      <Button title={t('forgotPassword.submit')} loading={submitting} onPress={handleSubmit} />
 
       <View style={styles.footer}>
         <Link href="/login" dismissTo>
-          <ThemedText type="linkPrimary">Back to sign in</ThemedText>
+          <ThemedText type="linkPrimary">{t('forgotPassword.backToSignIn')}</ThemedText>
         </Link>
       </View>
     </AuthScreen>

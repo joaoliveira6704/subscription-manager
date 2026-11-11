@@ -1,4 +1,13 @@
-import { createUser, getUserById, hashPassword, updatePassword, verifyUser } from '@/lib/auth';
+import {
+  changePassword,
+  createUser,
+  getUserById,
+  hashPassword,
+  updateEmail,
+  updateName,
+  updatePassword,
+  verifyUser,
+} from '@/lib/auth';
 
 // --- Native module mocks -------------------------------------------------------------------
 
@@ -65,6 +74,23 @@ const mockDb = {
       if (!row) return { lastInsertRowId: 0, changes: 0 };
       row.password_hash = password_hash;
       row.salt = salt;
+      return { lastInsertRowId: 0, changes: 1 };
+    }
+    if (sql === 'UPDATE users SET name = ? WHERE id = ?') {
+      const [name, id] = params as [string, number];
+      const row = this.rows.find((r) => r.id === id);
+      if (!row) return { lastInsertRowId: 0, changes: 0 };
+      row.name = name;
+      return { lastInsertRowId: 0, changes: 1 };
+    }
+    if (sql === 'UPDATE users SET email = ? WHERE id = ?') {
+      const [email, id] = params as [string, number];
+      if (this.rows.some((r) => r.id !== id && r.email.toLowerCase() === email.toLowerCase())) {
+        throw new Error('UNIQUE constraint failed: users.email');
+      }
+      const row = this.rows.find((r) => r.id === id);
+      if (!row) return { lastInsertRowId: 0, changes: 0 };
+      row.email = email;
       return { lastInsertRowId: 0, changes: 1 };
     }
     throw new Error(`Unexpected statement: ${sql}`);
@@ -261,5 +287,122 @@ describe('getUserById', () => {
 
   it('returns null for NaN (e.g. a corrupted stored session id)', async () => {
     await expect(getUserById(Number('not-a-number'))).resolves.toBeNull();
+  });
+});
+
+// --- updateName ----------------------------------------------------------------------------
+
+describe('updateName', () => {
+  beforeEach(async () => {
+    await createUser('Ada', 'ada@example.com', 'secret1');
+  });
+
+  it('saves the trimmed name and returns the updated user', async () => {
+    const result = await updateName(1, '  Ada Lovelace  ');
+    expect(result.data).toMatchObject({ id: 1, name: 'Ada Lovelace', email: 'ada@example.com' });
+    expect(mockDb.rows[0].name).toBe('Ada Lovelace');
+  });
+
+  it('keeps unicode names intact', async () => {
+    await updateName(1, 'João Ñúñez');
+    expect(mockDb.rows[0].name).toBe('João Ñúñez');
+  });
+
+  it('returns an error for a missing account', async () => {
+    await expect(updateName(999, 'Someone')).resolves.toEqual({
+      data: null,
+      error: 'Account not found',
+    });
+  });
+
+  it('rejects when the database fails', async () => {
+    const spy = jest.spyOn(mockDb, 'runAsync').mockRejectedValueOnce(new Error('disk I/O error'));
+    await expect(updateName(1, 'Ada')).rejects.toThrow('disk I/O error');
+    spy.mockRestore();
+  });
+});
+
+// --- updateEmail ---------------------------------------------------------------------------
+
+describe('updateEmail', () => {
+  beforeEach(async () => {
+    await createUser('Ada', 'ada@example.com', 'secret1');
+    await createUser('Grace', 'grace@example.com', 'secret2');
+  });
+
+  it('changes the email, normalized, and the user can sign in with it', async () => {
+    const result = await updateEmail(1, '  Ada.L@Example.COM ', 'secret1');
+
+    expect(result.data).toMatchObject({ id: 1, email: 'ada.l@example.com' });
+    expect((await verifyUser('ada.l@example.com', 'secret1')).error).toBeNull();
+    expect((await verifyUser('ada@example.com', 'secret1')).error).toBe('Invalid email or password');
+  });
+
+  it('requires the current password', async () => {
+    const result = await updateEmail(1, 'new@example.com', 'wrong-password');
+    expect(result).toEqual({ data: null, error: 'Current password is incorrect' });
+    expect(mockDb.rows[0].email).toBe('ada@example.com');
+  });
+
+  it('rejects an empty password', async () => {
+    const result = await updateEmail(1, 'new@example.com', '');
+    expect(result.error).toBe('Current password is incorrect');
+  });
+
+  it("rejects another account's email regardless of case", async () => {
+    const result = await updateEmail(1, 'GRACE@example.com', 'secret1');
+    expect(result).toEqual({ data: null, error: 'Email already in use' });
+    expect(mockDb.rows[0].email).toBe('ada@example.com');
+  });
+
+  it('treats the same email in a different case as no change', async () => {
+    const result = await updateEmail(1, 'ADA@EXAMPLE.COM', 'secret1');
+    expect(result.error).toBeNull();
+    expect(mockDb.rows[0].email).toBe('ada@example.com');
+  });
+
+  it('returns an error for a missing account', async () => {
+    const result = await updateEmail(999, 'new@example.com', 'secret1');
+    expect(result).toEqual({ data: null, error: 'Account not found' });
+  });
+});
+
+// --- changePassword ------------------------------------------------------------------------
+
+describe('changePassword', () => {
+  beforeEach(async () => {
+    await createUser('Ada', 'ada@example.com', 'secret1');
+  });
+
+  it('lets the user sign in with the new password and rejects the old one', async () => {
+    const result = await changePassword(1, 'secret1', 'new-secret');
+
+    expect(result.error).toBeNull();
+    expect((await verifyUser('ada@example.com', 'new-secret')).error).toBeNull();
+    expect((await verifyUser('ada@example.com', 'secret1')).error).toBe('Invalid email or password');
+  });
+
+  it('rotates the salt', async () => {
+    const oldSalt = mockDb.rows[0].salt;
+    await changePassword(1, 'secret1', 'new-secret');
+    expect(mockDb.rows[0].salt).not.toBe(oldSalt);
+  });
+
+  it('requires the correct current password, case sensitive', async () => {
+    const before = { ...mockDb.rows[0] };
+    const result = await changePassword(1, 'SECRET1', 'new-secret');
+
+    expect(result).toEqual({ data: null, error: 'Current password is incorrect' });
+    expect(mockDb.rows[0]).toEqual(before);
+  });
+
+  it('rejects reusing the current password', async () => {
+    const result = await changePassword(1, 'secret1', 'secret1');
+    expect(result.error).toBe('New password must be different from the current one');
+  });
+
+  it('returns an error for a missing account', async () => {
+    const result = await changePassword(999, 'secret1', 'new-secret');
+    expect(result).toEqual({ data: null, error: 'Account not found' });
   });
 });

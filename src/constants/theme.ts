@@ -13,6 +13,7 @@ export const Colors = {
     background: '#ffffff',
     backgroundElement: '#F0F0F3',
     backgroundSelected: '#E0E1E6',
+    backgroundSheet: '#ffffff',
     textSecondary: '#60646C',
   },
   dark: {
@@ -20,6 +21,8 @@ export const Colors = {
     background: '#000000',
     backgroundElement: '#212225',
     backgroundSelected: '#2E3135',
+    /** Raised above `background` so sheets stay visible against a black screen. */
+    backgroundSheet: '#18191B',
     textSecondary: '#B0B4BA',
   },
 } as const;
