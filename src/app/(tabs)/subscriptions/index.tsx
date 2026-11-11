@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CategoryTag } from '@/components/category-tag';
 import { confirmDeleteSubscription } from '@/components/confirm-delete-subscription';
+import { PaymentBadge } from '@/components/payment-badge';
 import { SubscriptionAvatar } from '@/components/subscription-avatar';
 import { ThemedText } from '@/components/themed-text';
 import { ChipGroup } from '@/components/ui/chip-group';
@@ -15,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { CurrencyPicker, type CurrencyChoice } from '@/components/ui/currency-picker';
 import { ListRow } from '@/components/ui/list';
 import { Money } from '@/components/ui/money';
-import { SwipeToDelete } from '@/components/ui/swipe-to-delete';
+import { SwipeActions } from '@/components/ui/swipe-actions';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAlert } from '@/context/alert-context';
 import { useCurrency } from '@/context/currency-context';
@@ -197,7 +198,7 @@ export default function SubscriptionsScreen() {
         </View>
       </View>
 
-      {/* Gesture-handler's ScrollView coordinates with the swipe-to-delete cards: once a
+      {/* Gesture-handler's ScrollView coordinates with the swipeable cards: once a
           vertical scroll starts, the card swipe is cancelled (and vice versa). */}
       <ScrollView
         style={styles.flex}
@@ -256,9 +257,16 @@ export default function SubscriptionsScreen() {
           </View>,
           <View key={`${group}-cards`} style={[styles.inner, styles.section]}>
             {groupItems.map((sub) => (
-              <SwipeToDelete
+              <SwipeActions
                 key={sub.id}
-                label={t('subscriptionForm.deleteConfirm')}
+                editLabel={t('details.edit')}
+                onEdit={() =>
+                  router.navigate({
+                    pathname: '/subscription/edit/[id]',
+                    params: { id: String(sub.id) },
+                  })
+                }
+                deleteLabel={t('subscriptionForm.deleteConfirm')}
                 onDelete={() =>
                   confirmDeleteSubscription({
                     alert,
@@ -279,7 +287,16 @@ export default function SubscriptionsScreen() {
                     titleAccessory={<CategoryTag category={sub.category} />}
                     title={sub.name}
                     subtitle={`${renewsLabel(sub.nextPayment)} · ${formatInterval(language, sub.interval)}`}
-                    trailing={<Money amountMinor={sub.amountMinor} currency={sub.currency} />}
+                    trailing={
+                      <View style={styles.trailing}>
+                        <Money amountMinor={sub.amountMinor} currency={sub.currency} />
+                        <PaymentBadge
+                          method={sub.paymentMethod}
+                          brand={sub.cardBrand}
+                          last4={sub.cardLast4}
+                        />
+                      </View>
+                    }
                     onPress={() =>
                       router.navigate({
                         pathname: '/subscription/[id]',
@@ -288,7 +305,7 @@ export default function SubscriptionsScreen() {
                     }
                   />
                 </View>
-              </SwipeToDelete>
+              </SwipeActions>
             ))}
           </View>,
         ])}
@@ -344,6 +361,10 @@ function SkeletonList() {
 }
 
 const styles = StyleSheet.create({
+  trailing: {
+    alignItems: 'flex-end',
+    gap: Spacing.half,
+  },
   flex: {
     flex: 1,
   },

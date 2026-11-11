@@ -19,6 +19,9 @@ type Row = {
   billing_day: number;
   category: string;
   notes: string;
+  payment_method: string | null;
+  card_brand: string | null;
+  card_last4: string | null;
   created_at: string;
 };
 
@@ -36,7 +39,9 @@ const mockDb = {
     this.nextId = 1;
   },
   async getAllAsync<T>(sql: string, ...params: unknown[]): Promise<T[]> {
-    if (oneLine(sql) === 'SELECT * FROM subscriptions WHERE user_id = ? ORDER BY name COLLATE NOCASE') {
+    if (
+      oneLine(sql) === 'SELECT * FROM subscriptions WHERE user_id = ? ORDER BY name COLLATE NOCASE'
+    ) {
       return this.rows
         .filter((r) => r.user_id === params[0])
         .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()))
@@ -55,7 +60,7 @@ const mockDb = {
     const q = oneLine(sql);
     if (
       q ===
-      'INSERT INTO subscriptions (user_id, name, amount_minor, currency, first_payment, interval_unit, interval_count, billing_day, category, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO subscriptions (user_id, name, amount_minor, currency, first_payment, interval_unit, interval_count, billing_day, category, notes, payment_method, card_brand, card_last4) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     ) {
       const [
         user_id,
@@ -68,7 +73,24 @@ const mockDb = {
         billing_day,
         category,
         notes,
-      ] = params as [number, string, number, string, string, string, number, number, string, string];
+        payment_method,
+        card_brand,
+        card_last4,
+      ] = params as [
+        number,
+        string,
+        number,
+        string,
+        string,
+        string,
+        number,
+        number,
+        string,
+        string,
+        string | null,
+        string | null,
+        string | null,
+      ];
       const id = this.nextId++;
       this.rows.push({
         id,
@@ -82,13 +104,16 @@ const mockDb = {
         billing_day,
         category,
         notes,
+        payment_method,
+        card_brand,
+        card_last4,
         created_at: '2026-11-11 10:00:00',
       });
       return { lastInsertRowId: id, changes: 1 };
     }
     if (
       q ===
-      'UPDATE subscriptions SET name = ?, amount_minor = ?, currency = ?, first_payment = ?, interval_unit = ?, interval_count = ?, billing_day = ?, category = ?, notes = ? WHERE id = ? AND user_id = ?'
+      'UPDATE subscriptions SET name = ?, amount_minor = ?, currency = ?, first_payment = ?, interval_unit = ?, interval_count = ?, billing_day = ?, category = ?, notes = ?, payment_method = ?, card_brand = ?, card_last4 = ? WHERE id = ? AND user_id = ?'
     ) {
       const [
         name,
@@ -100,9 +125,27 @@ const mockDb = {
         billing_day,
         category,
         notes,
+        payment_method,
+        card_brand,
+        card_last4,
         id,
         userId,
-      ] = params as [string, number, string, string, string, number, number, string, string, number, number];
+      ] = params as [
+        string,
+        number,
+        string,
+        string,
+        string,
+        number,
+        number,
+        string,
+        string,
+        string | null,
+        string | null,
+        string | null,
+        number,
+        number,
+      ];
       const row = this.rows.find((r) => r.id === id && r.user_id === userId);
       if (!row) return { lastInsertRowId: 0, changes: 0 };
       Object.assign(row, {
@@ -115,6 +158,9 @@ const mockDb = {
         billing_day,
         category,
         notes,
+        payment_method,
+        card_brand,
+        card_last4,
       });
       return { lastInsertRowId: 0, changes: 1 };
     }
@@ -210,6 +256,43 @@ describe('validateSubscription', () => {
     );
   });
 
+  it('treats the payment method and card as optional', () => {
+    expect(validateSubscription(input({ paymentMethod: null }))).toEqual({});
+    expect(validateSubscription(input({ paymentMethod: undefined }))).toEqual({});
+    expect(validateSubscription(input({ paymentMethod: 'card' }))).toEqual({});
+    expect(
+      validateSubscription(input({ paymentMethod: 'card', cardBrand: 'visa', cardLast4: '' }))
+    ).toEqual({});
+    expect(
+      validateSubscription(input({ paymentMethod: 'card', cardBrand: null, cardLast4: '0042' }))
+    ).toEqual({});
+  });
+
+  it('rejects unknown payment methods and card types', () => {
+    expect(validateSubscription(input({ paymentMethod: 'cash' as never })).paymentMethod).toBe(
+      'Choose a payment method'
+    );
+    expect(
+      validateSubscription(input({ paymentMethod: 'card', cardBrand: 'diners' as never })).cardBrand
+    ).toBe('Choose a card type');
+  });
+
+  it('accepts only the last 4 digits of a card, never a full number', () => {
+    for (const cardLast4 of ['1', '123', '12345', '4111111111111111', '12a4', '    ']) {
+      expect(validateSubscription(input({ paymentMethod: 'card', cardLast4 })).cardLast4).toBe(
+        'Enter only the last 4 digits of the card'
+      );
+    }
+  });
+
+  it('ignores card details when the method is not a card', () => {
+    expect(
+      validateSubscription(
+        input({ paymentMethod: 'paypal', cardBrand: 'bogus' as never, cardLast4: '12' })
+      )
+    ).toEqual({});
+  });
+
   it('handles null and undefined fields without throwing', () => {
     expect(() => validateSubscription({})).not.toThrow();
     expect(Object.keys(validateSubscription({}))).toEqual(
@@ -262,6 +345,77 @@ describe('createSubscription', () => {
     const spy = jest.spyOn(mockDb, 'runAsync').mockRejectedValueOnce(new Error('disk full'));
     await expect(createSubscription(ALICE, input())).rejects.toThrow('disk full');
     spy.mockRestore();
+  });
+});
+
+describe('payment method storage', () => {
+  it('saves the card type and last 4 digits', async () => {
+    const result = await createSubscription(
+      ALICE,
+      input({ paymentMethod: 'card', cardBrand: 'visa', cardLast4: '4242' })
+    );
+    expect(result.data).toMatchObject({
+      paymentMethod: 'card',
+      cardBrand: 'visa',
+      cardLast4: '4242',
+    });
+  });
+
+  it('stores nothing for a subscription without a payment method', async () => {
+    const result = await createSubscription(ALICE, input());
+    expect(result.data).toMatchObject({ paymentMethod: null, cardBrand: null, cardLast4: null });
+    expect(mockDb.rows[0]).toMatchObject({
+      payment_method: null,
+      card_brand: null,
+      card_last4: null,
+    });
+  });
+
+  it('stores an empty last-4 field as null', async () => {
+    await createSubscription(ALICE, input({ paymentMethod: 'card', cardLast4: '' }));
+    expect(mockDb.rows[0].card_last4).toBeNull();
+  });
+
+  it('drops card details when the method is not a card', async () => {
+    const result = await createSubscription(
+      ALICE,
+      input({ paymentMethod: 'directDebit', cardBrand: 'visa', cardLast4: '4242' })
+    );
+    expect(result.data).toMatchObject({
+      paymentMethod: 'directDebit',
+      cardBrand: null,
+      cardLast4: null,
+    });
+  });
+
+  it('clears the card when an update switches to another method', async () => {
+    const { data } = await createSubscription(
+      ALICE,
+      input({ paymentMethod: 'card', cardBrand: 'amex', cardLast4: '1005' })
+    );
+    const result = await updateSubscription(ALICE, data!.id, input({ paymentMethod: 'paypal' }));
+    expect(result.data).toMatchObject({
+      paymentMethod: 'paypal',
+      cardBrand: null,
+      cardLast4: null,
+    });
+  });
+
+  it('removes the payment method on update', async () => {
+    const { data } = await createSubscription(ALICE, input({ paymentMethod: 'card' }));
+    const result = await updateSubscription(ALICE, data!.id, input({ paymentMethod: null }));
+    expect(result.data?.paymentMethod).toBeNull();
+  });
+
+  it('reads unknown stored values as no payment method or card', async () => {
+    await createSubscription(ALICE, input());
+    Object.assign(mockDb.rows[0], {
+      payment_method: 'cash',
+      card_brand: 'diners',
+      card_last4: '4111111111111111',
+    });
+    const [sub] = await listSubscriptions(ALICE);
+    expect(sub).toMatchObject({ paymentMethod: null, cardBrand: null, cardLast4: null });
   });
 });
 

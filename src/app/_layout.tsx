@@ -19,7 +19,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   return (
-    // Needed by gesture-handler components such as swipe-to-delete rows.
+    // Needed by gesture-handler components such as the swipeable subscription cards.
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemePreferenceProvider>
         <LanguageProvider>
@@ -57,7 +57,7 @@ function RootNavigator() {
   const { user, isLoading } = useAuth();
   const theme = useTheme();
 
-  // Account edits open as sheets over the whole app, tab bar included.
+  // Account edits and subscription details open as sheets over the whole app, tab bar included.
   const sheetOptions = {
     presentation: 'formSheet' as const,
     sheetGrabberVisible: true,
@@ -85,7 +85,8 @@ function RootNavigator() {
           <Stack.Screen name="account/edit-email" options={sheetOptions} />
           <Stack.Screen name="account/change-password" options={sheetOptions} />
           <Stack.Screen name="subscription/new" options={formOptions} />
-          <Stack.Screen name="subscription/[id]" options={formOptions} />
+          <Stack.Screen name="subscription/[id]" options={sheetOptions} />
+          <Stack.Screen name="subscription/edit/[id]" options={formOptions} />
         </Stack.Protected>
         <Stack.Protected guard={!user} redirectTo="/">
           <Stack.Screen name="(auth)" />

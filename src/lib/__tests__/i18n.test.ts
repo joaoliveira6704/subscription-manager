@@ -135,6 +135,14 @@ describe('translateMessage', () => {
     ...Object.values(
       validateSubscription({ notes: 'n'.repeat(MAX_NOTES_LENGTH + 1), intervalCount: 0 })
     ),
+    ...Object.values(
+      validateSubscription({
+        paymentMethod: 'card',
+        cardBrand: 'diners' as never,
+        cardLast4: '12345',
+      })
+    ),
+    ...Object.values(validateSubscription({ paymentMethod: 'cash' as never })),
     'Subscription not found',
     'Could not save subscription',
     'Could not load your subscriptions',
@@ -148,9 +156,9 @@ describe('translateMessage', () => {
   });
 
   it('keeps the numbers in messages with limits', () => {
-    expect(translateMessage('pt-PT', `Password must be at least ${MIN_PASSWORD_LENGTH} characters`)).toBe(
-      `A palavra-passe deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres`
-    );
+    expect(
+      translateMessage('pt-PT', `Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
+    ).toBe(`A palavra-passe deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres`);
     expect(translateMessage('pt-PT', `Name must be ${MAX_NAME_LENGTH} characters or fewer`)).toBe(
       `O nome deve ter no máximo ${MAX_NAME_LENGTH} caracteres`
     );

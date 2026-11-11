@@ -5,7 +5,7 @@ export const db = openDatabaseSync('app.db');
 // SQLite leaves foreign keys off per connection; needed for ON DELETE CASCADE.
 db.execSync('PRAGMA foreign_keys = ON');
 
-const DATABASE_VERSION = 4;
+const DATABASE_VERSION = 5;
 
 /**
  * Runs pending schema migrations, tracked with `PRAGMA user_version`.
@@ -82,6 +82,18 @@ export async function migrate() {
         DROP TABLE subscriptions;
         ALTER TABLE subscriptions_v4 RENAME TO subscriptions;
         CREATE INDEX IF NOT EXISTS subscriptions_user ON subscriptions(user_id);
+      `);
+    });
+  }
+
+  if (currentVersion < 5) {
+    // Optional payment method, and for cards only the type and last 4 digits.
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(`
+        ALTER TABLE subscriptions ADD COLUMN payment_method TEXT;
+        ALTER TABLE subscriptions ADD COLUMN card_brand TEXT;
+        ALTER TABLE subscriptions ADD COLUMN card_last4 TEXT
+          CHECK (card_last4 IS NULL OR (length(card_last4) = 4 AND card_last4 NOT GLOB '*[^0-9]*'));
       `);
     });
   }

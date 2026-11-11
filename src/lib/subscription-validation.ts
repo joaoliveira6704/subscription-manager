@@ -7,6 +7,13 @@ import {
 } from '@/lib/billing';
 import { isCategory, type Category } from '@/lib/categories';
 import { isCurrency, type Currency } from '@/lib/money';
+import {
+  isCardBrand,
+  isCardLast4,
+  isPaymentMethod,
+  type CardBrand,
+  type PaymentMethod,
+} from '@/lib/payment-methods';
 import { MAX_NAME_LENGTH, MAX_NOTES_LENGTH } from '@/lib/validation';
 
 export type SubscriptionInput = {
@@ -19,6 +26,12 @@ export type SubscriptionInput = {
   firstPayment: string;
   category: Category;
   notes: string;
+  /** Optional; null or missing means "not set". */
+  paymentMethod?: PaymentMethod | null;
+  /** Only used when paying by card. */
+  cardBrand?: CardBrand | null;
+  /** Only the last 4 digits of the card, or '' when not given. */
+  cardLast4?: string;
 };
 
 export type SubscriptionErrors = Partial<Record<keyof SubscriptionInput, string>>;
@@ -47,6 +60,20 @@ export function validateSubscription(input: Partial<SubscriptionInput>): Subscri
   if (!isCategory(input.category)) errors.category = 'Choose a category';
   if ((input.notes ?? '').length > MAX_NOTES_LENGTH) {
     errors.notes = `Notes must be ${MAX_NOTES_LENGTH} characters or fewer`;
+  }
+
+  const method = input.paymentMethod;
+  if (method != null && !isPaymentMethod(method)) {
+    errors.paymentMethod = 'Choose a payment method';
+  }
+  if (method === 'card') {
+    if (input.cardBrand != null && !isCardBrand(input.cardBrand)) {
+      errors.cardBrand = 'Choose a card type';
+    }
+    const last4 = input.cardLast4 ?? '';
+    if (last4 !== '' && !isCardLast4(last4)) {
+      errors.cardLast4 = 'Enter only the last 4 digits of the card';
+    }
   }
 
   return errors;

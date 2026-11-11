@@ -1,7 +1,14 @@
 import * as Haptics from 'expo-haptics';
 import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -28,6 +35,14 @@ import {
 } from '@/lib/billing';
 import { CATEGORIES, CATEGORY_ICONS, DEFAULT_CATEGORY, type Category } from '@/lib/categories';
 import { amountToInput, currencySymbol, parseAmount, type Currency } from '@/lib/money';
+import {
+  CARD_BRANDS,
+  PAYMENT_METHOD_ICONS,
+  PAYMENT_METHODS,
+  cardDigitsInput,
+  type CardBrand,
+  type PaymentMethod,
+} from '@/lib/payment-methods';
 import {
   validateSubscription,
   type SubscriptionErrors,
@@ -86,6 +101,13 @@ export function SubscriptionForm({
       : null;
   const [category, setCategory] = useState<Category>(initial?.category ?? DEFAULT_CATEGORY);
   const [notes, setNotes] = useState(initial?.notes ?? '');
+  // 'none' = no payment method chosen (it's optional).
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | 'none'>(
+    initial?.paymentMethod ?? 'none'
+  );
+  // '' = card type not chosen (also optional).
+  const [cardBrand, setCardBrand] = useState<CardBrand | ''>(initial?.cardBrand ?? '');
+  const [cardLast4, setCardLast4] = useState(initial?.cardLast4 ?? '');
   const [errors, setErrors] = useState<SubscriptionErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -102,6 +124,9 @@ export function SubscriptionForm({
       firstPayment,
       category,
       notes,
+      paymentMethod: paymentMethod === 'none' ? null : paymentMethod,
+      cardBrand: cardBrand || null,
+      cardLast4,
     };
     const nextErrors = validateSubscription(input);
     setErrors(nextErrors);
@@ -300,6 +325,70 @@ export function SubscriptionForm({
             />
           </View>
 
+          <View style={styles.field}>
+            <ThemedText type="smallBold">{t('subscriptionForm.paymentMethod')}</ThemedText>
+            <ChipGroup
+              accessibilityLabel={t('subscriptionForm.paymentMethod')}
+              options={[
+                { value: 'none' as const, label: t('paymentMethod.none') },
+                ...PAYMENT_METHODS.map((value) => ({
+                  value,
+                  label: t(`paymentMethod.${value}`),
+                  icon: {
+                    ...PAYMENT_METHOD_ICONS[value],
+                    web: PAYMENT_METHOD_ICONS[value].android,
+                  },
+                })),
+              ]}
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+            />
+            {error('paymentMethod') ? (
+              <ThemedText type="small" style={{ color: ERROR_COLOR }}>
+                {error('paymentMethod')}
+              </ThemedText>
+            ) : null}
+          </View>
+
+          {paymentMethod === 'card' ? (
+            <>
+              <View style={styles.field}>
+                <ThemedText type="smallBold">{t('subscriptionForm.cardType')}</ThemedText>
+                <ChipGroup
+                  accessibilityLabel={t('subscriptionForm.cardType')}
+                  options={CARD_BRANDS.map((value) => ({
+                    value,
+                    label: t(`cardBrand.${value}`),
+                  }))}
+                  value={cardBrand}
+                  onChange={setCardBrand}
+                />
+                {error('cardBrand') ? (
+                  <ThemedText type="small" style={{ color: ERROR_COLOR }}>
+                    {error('cardBrand')}
+                  </ThemedText>
+                ) : null}
+              </View>
+              <View style={styles.field}>
+                <TextField
+                  label={t('subscriptionForm.cardLast4')}
+                  value={cardLast4}
+                  // Digits only; pasting a full number keeps just its last 4 digits.
+                  onChangeText={(text) => setCardLast4(cardDigitsInput(text))}
+                  error={error('cardLast4')}
+                  placeholder="1234"
+                  keyboardType="number-pad"
+                  autoComplete="off"
+                  textContentType="none"
+                  importantForAutofill="no"
+                />
+                <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>
+                  {t('subscriptionForm.cardLast4Hint')}
+                </ThemedText>
+              </View>
+            </>
+          ) : null}
+
           <TextField
             label={t('subscriptionForm.notes')}
             value={notes}
@@ -409,6 +498,7 @@ const styles = StyleSheet.create({
   hint: {
     paddingHorizontal: Spacing.three,
   },
+
   notes: {
     minHeight: 80,
     textAlignVertical: 'top',
