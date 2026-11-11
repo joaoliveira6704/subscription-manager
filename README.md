@@ -1,19 +1,19 @@
-# Welcome to your Expo app 👋
+# Tallyo
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Tallyo tracks your subscriptions: what you pay, how often, when each one renews and how you pay for it. It shows your monthly and yearly totals at a glance. Built with [Expo](https://expo.dev) for iOS and Android.
 
 ## Get started
 
 1. Install dependencies
 
    ```bash
-   npm install
+   bun install
    ```
 
 2. Start the app
 
    ```bash
-   npx expo start
+   bunx expo start
    ```
 
 In the output, you'll find options to open the app in a
@@ -42,7 +42,7 @@ To install a nightly build:
 - **iOS simulator:** unzip the file, then run:
 
   ```bash
-  xcrun simctl install booted subscriptionmanager.app
+  xcrun simctl install booted Tallyo.app
   ```
 
 ## Get a fresh project

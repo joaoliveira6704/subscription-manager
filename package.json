@@ -1,5 +1,5 @@
 {
-  "name": "subscription-manager",
+  "name": "tallyo",
   "version": "0.1.5",
   "main": "expo-router/entry",
   "dependencies": {

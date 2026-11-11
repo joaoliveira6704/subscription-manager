@@ -1,4 +1,4 @@
-# Agent rules: subscription-manager
+# Agent rules: Tallyo
 
 Every AI agent working in this repo follows these rules. A feature is not "done" until it meets all of them.
 
