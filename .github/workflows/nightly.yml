@@ -78,9 +78,9 @@ jobs:
           # A manual run on a day that already has a nightly replaces it.
           gh release delete "$tag" --cleanup-tag --yes 2>/dev/null || true
 
-          mv artifacts/android-apk/app-release.apk "subscription-manager-$tag.apk"
+          mv artifacts/android-apk/app-release.apk "tallyo-$tag.apk"
           mv artifacts/ios-simulator-app/ios-simulator-app.zip \
-            "subscription-manager-$tag-ios-simulator.zip"
+            "tallyo-$tag-ios-simulator.zip"
 
           notes_from=()
           if [ -n "$PREVIOUS_TAG" ] && [ "$PREVIOUS_TAG" != "$tag" ]; then
@@ -92,8 +92,8 @@ jobs:
             --target "$SHA" \
             --title "Nightly $day (${SHA:0:7})" \
             --generate-notes "${notes_from[@]}" \
-            "subscription-manager-$tag.apk" \
-            "subscription-manager-$tag-ios-simulator.zip"
+            "tallyo-$tag.apk" \
+            "tallyo-$tag-ios-simulator.zip"
 
       - name: Keep only the 7 newest nightlies
         run: |

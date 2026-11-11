@@ -1,15 +1,15 @@
 {
   "expo": {
     "name": "Tallyo",
-    "slug": "subscription-manager",
+    "slug": "tallyo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "subscriptionmanager",
+    "scheme": "tallyo",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/app.icon",
-      "bundleIdentifier": "com.joaoliveira6704.subscriptionmanager"
+      "bundleIdentifier": "com.joaoliveira6704.tallyo"
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +19,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.joaoliveira6704.subscriptionmanager"
+      "package": "com.joaoliveira6704.tallyo"
     },
     "web": {
       "output": "server",
