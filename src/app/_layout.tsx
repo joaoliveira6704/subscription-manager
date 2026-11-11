@@ -3,11 +3,15 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { Colors, Spacing } from '@/constants/theme';
+import { AlertProvider } from '@/context/alert-context';
 import { AuthProvider, useAuth } from '@/context/auth-context';
+import { CurrencyProvider } from '@/context/currency-context';
 import { LanguageProvider } from '@/context/language-context';
+import { SubscriptionsProvider } from '@/context/subscriptions-context';
 import { ThemePreferenceProvider } from '@/context/theme-preference-context';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -15,11 +19,16 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   return (
-    <ThemePreferenceProvider>
-      <LanguageProvider>
-        <ThemedRoot />
-      </LanguageProvider>
-    </ThemePreferenceProvider>
+    // Needed by gesture-handler components such as swipe-to-delete rows.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemePreferenceProvider>
+        <LanguageProvider>
+          <CurrencyProvider>
+            <ThemedRoot />
+          </CurrencyProvider>
+        </LanguageProvider>
+      </ThemePreferenceProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -33,9 +42,13 @@ function ThemedRoot() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AuthProvider>
-        <RootNavigator />
-      </AuthProvider>
+      <AlertProvider>
+        <AuthProvider>
+          <SubscriptionsProvider>
+            <RootNavigator />
+          </SubscriptionsProvider>
+        </AuthProvider>
+      </AlertProvider>
     </ThemeProvider>
   );
 }
@@ -53,6 +66,13 @@ function RootNavigator() {
     contentStyle: { backgroundColor: theme.backgroundSheet },
   };
 
+  // The subscription form is too long to size to its content, so it uses the full-height
+  // page sheet on iOS (a full-screen card on Android), where its content can scroll.
+  const formOptions = {
+    presentation: 'modal' as const,
+    contentStyle: { backgroundColor: theme.backgroundSheet },
+  };
+
   // Keep the native splash screen up until the stored session has been restored.
   if (isLoading) return null;
 
@@ -64,6 +84,8 @@ function RootNavigator() {
           <Stack.Screen name="account/edit-name" options={sheetOptions} />
           <Stack.Screen name="account/edit-email" options={sheetOptions} />
           <Stack.Screen name="account/change-password" options={sheetOptions} />
+          <Stack.Screen name="subscription/new" options={formOptions} />
+          <Stack.Screen name="subscription/[id]" options={formOptions} />
         </Stack.Protected>
         <Stack.Protected guard={!user} redirectTo="/">
           <Stack.Screen name="(auth)" />

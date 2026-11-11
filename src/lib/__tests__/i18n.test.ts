@@ -1,4 +1,5 @@
 import {
+  formatInterval,
   languageName,
   parseLanguagePreference,
   resolveLanguage,
@@ -6,8 +7,10 @@ import {
   translateMessage,
 } from '@/lib/i18n';
 import { en, ptPT, type TranslationKey } from '@/lib/i18n/translations';
+import { validateSubscription } from '@/lib/subscription-validation';
 import {
   MAX_NAME_LENGTH,
+  MAX_NOTES_LENGTH,
   MIN_PASSWORD_LENGTH,
   validateEmail,
   validateName,
@@ -129,6 +132,12 @@ describe('translateMessage', () => {
     'Account not found',
     'New password must be different from the current one',
     'You are signed out',
+    ...Object.values(
+      validateSubscription({ notes: 'n'.repeat(MAX_NOTES_LENGTH + 1), intervalCount: 0 })
+    ),
+    'Subscription not found',
+    'Could not save subscription',
+    'Could not load your subscriptions',
   ] as string[];
 
   it.each(libMessages)('translates "%s" to pt-PT', (message) => {
@@ -166,5 +175,19 @@ describe('languageName', () => {
   it('names each language in its own language', () => {
     expect(languageName('en')).toBe('English');
     expect(languageName('pt-PT')).toBe('Português (Portugal)');
+  });
+});
+
+describe('formatInterval', () => {
+  it('uses the single-word label for every 1 unit', () => {
+    expect(formatInterval('en', { unit: 'month', count: 1 })).toBe('Monthly');
+    expect(formatInterval('pt-PT', { unit: 'week', count: 1 })).toBe('Semanal');
+    expect(formatInterval('en', { unit: 'day', count: 1 })).toBe('Daily');
+  });
+
+  it('spells out custom intervals in each language', () => {
+    expect(formatInterval('en', { unit: 'month', count: 3 })).toBe('Every 3 months');
+    expect(formatInterval('pt-PT', { unit: 'week', count: 2 })).toBe('A cada 2 semanas');
+    expect(formatInterval('pt-PT', { unit: 'year', count: 99 })).toBe('A cada 99 anos');
   });
 });
