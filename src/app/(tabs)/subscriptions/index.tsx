@@ -31,7 +31,7 @@ import {
   totalsByCurrency,
 } from '@/lib/billing';
 import { CATEGORY_ICONS, categoriesInUse, type Category } from '@/lib/categories';
-import { effectiveCurrency } from '@/lib/currency-preference';
+import { effectiveAmount } from '@/lib/currency-preference';
 import { formatInterval } from '@/lib/i18n';
 import { formatMoney } from '@/lib/money';
 
@@ -51,7 +51,8 @@ export default function SubscriptionsScreen() {
   const items = subscriptions
     .map((sub) => ({
       ...sub,
-      currency: effectiveCurrency(sub.currency, prefs),
+      // Same currency and amount scale as the totals (e.g. ¥1,000 shown as €1,000.00).
+      ...effectiveAmount(sub.amountMinor, sub.currency, prefs),
       nextPayment: nextPaymentFrom(sub.firstPayment, sub.interval, sub.billingDay, today),
     }))
     .filter((sub) => prefs.mode === 'single' || filter === 'all' || sub.currency === filter);

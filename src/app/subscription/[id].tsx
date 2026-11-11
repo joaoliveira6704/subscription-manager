@@ -12,9 +12,11 @@ import { ListRow, ListSection } from '@/components/ui/list';
 import { Money } from '@/components/ui/money';
 import { Spacing } from '@/constants/theme';
 import { useAlert } from '@/context/alert-context';
+import { useCurrency } from '@/context/currency-context';
 import { useTranslation } from '@/context/language-context';
 import { useSubscriptions } from '@/context/subscriptions-context';
 import { useTheme } from '@/hooks/use-theme';
+import { effectiveAmount } from '@/lib/currency-preference';
 import { isoToLocalDate, nextPaymentFrom, toMonthly, todayISO } from '@/lib/billing';
 import { formatInterval } from '@/lib/i18n';
 import { formatMoney } from '@/lib/money';
@@ -28,6 +30,7 @@ export default function SubscriptionDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, tm, locale, language } = useTranslation();
   const alert = useAlert();
+  const prefs = useCurrency();
   const { subscriptions, remove } = useSubscriptions();
   const sub = subscriptions.find((item) => item.id === Number(id));
 
@@ -52,6 +55,8 @@ export default function SubscriptionDetailsScreen() {
     return date ? dateFormat.format(date) : iso;
   };
   const nextPayment = nextPaymentFrom(sub.firstPayment, sub.interval, sub.billingDay, todayISO());
+  // Shown the same way as in the list (single mode uses the app currency).
+  const shown = effectiveAmount(sub.amountMinor, sub.currency, prefs);
   const isMonthly = sub.interval.unit === 'month' && sub.interval.count === 1;
   const payment = paymentDetailLabel(sub.paymentMethod, sub.cardBrand, sub.cardLast4, {
     method: (value) => t(`paymentMethod.${value}`),
@@ -88,7 +93,7 @@ export default function SubscriptionDetailsScreen() {
       </View>
 
       <View style={styles.hero}>
-        <Money amountMinor={sub.amountMinor} currency={sub.currency} size={44} weight={700} />
+        <Money amountMinor={shown.amountMinor} currency={shown.currency} size={44} weight={700} />
         <ThemedText themeColor="textSecondary">{formatInterval(language, sub.interval)}</ThemedText>
       </View>
 
@@ -107,7 +112,7 @@ export default function SubscriptionDetailsScreen() {
           <ListRow
             icon={{ ios: 'chart.bar', android: 'bar_chart', web: 'bar_chart' }}
             title={t('details.perMonth')}
-            value={formatMoney(toMonthly(sub.amountMinor, sub.interval), sub.currency, locale)}
+            value={formatMoney(toMonthly(shown.amountMinor, sub.interval), shown.currency, locale)}
           />
         )}
         <ListRow
