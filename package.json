@@ -1,6 +1,6 @@
 {
   "name": "subscription-manager",
-  "version": "1.0.0",
+  "version": "0.1.5",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/ui": "~58.0.27",
@@ -14,6 +14,7 @@
     "expo-haptics": "~58.0.7",
     "expo-image": "~58.0.18",
     "expo-linking": "~58.0.16",
+    "expo-localization": "~58.0.5",
     "expo-router": "~58.0.30",
     "expo-secure-store": "~58.0.2",
     "expo-splash-screen": "~58.0.13",
@@ -35,6 +36,8 @@
   "devDependencies": {
     "@types/jest": "30.0.0",
     "@types/react": "~19.3.0",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~58.0.4",
     "jest": "~30.5.2",
     "jest-expo": "~58.0.14",
     "typescript": "~6.0.3"

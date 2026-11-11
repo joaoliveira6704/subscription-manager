@@ -9,10 +9,12 @@ import { PasswordField } from '@/components/ui/password-field';
 import { TextField } from '@/components/ui/text-field';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
+import { useTranslation } from '@/context/language-context';
 import { validateEmail } from '@/lib/validation';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
+  const { t, tm } = useTranslation();
   const { reset } = useLocalSearchParams<{ reset?: string }>();
   const passwordRef = useRef<TextInputInstance>(null);
 
@@ -25,7 +27,7 @@ export default function LoginScreen() {
   async function handleSubmit() {
     const errors = {
       email: validateEmail(email) ?? undefined,
-      password: password ? undefined : 'Password is required',
+      password: password ? undefined : t('errors.passwordRequired'),
     };
     setFieldErrors(errors);
     setFormError(null);
@@ -39,17 +41,17 @@ export default function LoginScreen() {
 
   return (
     <AuthScreen
-      title="Welcome back"
-      subtitle="Sign in to manage your subscriptions."
-      error={formError}
-      notice={reset ? 'Password updated. Sign in with your new password.' : null}>
+      title={t('login.title')}
+      subtitle={t('login.subtitle')}
+      error={formError && tm(formError)}
+      notice={reset ? t('login.passwordUpdated') : null}>
       <View style={styles.fields}>
         <TextField
-          label="Email"
+          label={t('form.email')}
           value={email}
           onChangeText={setEmail}
-          error={fieldErrors.email}
-          placeholder="you@example.com"
+          error={fieldErrors.email && tm(fieldErrors.email)}
+          placeholder={t('form.emailPlaceholder')}
           autoCapitalize="none"
           autoComplete="email"
           autoCorrect={false}
@@ -61,29 +63,29 @@ export default function LoginScreen() {
         />
         <PasswordField
           ref={passwordRef}
-          label="Password"
+          label={t('form.password')}
           value={password}
           onChangeText={setPassword}
           error={fieldErrors.password}
-          placeholder="Your password"
+          placeholder={t('form.passwordPlaceholder')}
           autoComplete="current-password"
           textContentType="password"
           returnKeyType="go"
           onSubmitEditing={handleSubmit}
         />
         <Link href="/forgot-password" style={styles.forgot}>
-          <ThemedText type="linkPrimary">Forgot password?</ThemedText>
+          <ThemedText type="linkPrimary">{t('login.forgotPassword')}</ThemedText>
         </Link>
       </View>
 
-      <Button title="Sign in" loading={submitting} onPress={handleSubmit} />
+      <Button title={t('login.submit')} loading={submitting} onPress={handleSubmit} />
 
       <View style={styles.footer}>
         <ThemedText type="small" themeColor="textSecondary">
-          Don&apos;t have an account?
+          {t('login.noAccount')}
         </ThemedText>
         <Link href="/sign-up">
-          <ThemedText type="linkPrimary">Create account</ThemedText>
+          <ThemedText type="linkPrimary">{t('login.createAccount')}</ThemedText>
         </Link>
       </View>
     </AuthScreen>

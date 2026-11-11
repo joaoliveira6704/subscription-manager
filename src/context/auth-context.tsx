@@ -1,7 +1,16 @@
 import * as SecureStore from 'expo-secure-store';
 import { createContext, use, useEffect, useState, type PropsWithChildren } from 'react';
 
-import { createUser, getUserById, updatePassword, verifyUser, type User } from '@/lib/auth';
+import {
+  changePassword,
+  createUser,
+  getUserById,
+  updateEmail,
+  updateName,
+  updatePassword,
+  verifyUser,
+  type User,
+} from '@/lib/auth';
 import { migrate } from '@/lib/db';
 
 const SESSION_KEY = 'session.userId';
@@ -15,7 +24,12 @@ type AuthContextValue = {
   signUp: (name: string, email: string, password: string) => Promise<ActionResult>;
   signOut: () => Promise<void>;
   resetPassword: (email: string, newPassword: string) => Promise<ActionResult>;
+  updateName: (name: string) => Promise<ActionResult>;
+  updateEmail: (email: string, currentPassword: string) => Promise<ActionResult>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<ActionResult>;
 };
+
+const SIGNED_OUT: ActionResult = { error: 'You are signed out' };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -73,6 +87,25 @@ export function AuthProvider({ children }: PropsWithChildren) {
     },
     async resetPassword(email, newPassword) {
       const result = await updatePassword(email, newPassword);
+      return { error: result.error };
+    },
+    async updateName(name) {
+      if (!user) return SIGNED_OUT;
+      const result = await updateName(user.id, name);
+      if (result.error !== null) return { error: result.error };
+      setUser(result.data);
+      return { error: null };
+    },
+    async updateEmail(email, currentPassword) {
+      if (!user) return SIGNED_OUT;
+      const result = await updateEmail(user.id, email, currentPassword);
+      if (result.error !== null) return { error: result.error };
+      setUser(result.data);
+      return { error: null };
+    },
+    async changePassword(currentPassword, newPassword) {
+      if (!user) return SIGNED_OUT;
+      const result = await changePassword(user.id, currentPassword, newPassword);
       return { error: result.error };
     },
   };
